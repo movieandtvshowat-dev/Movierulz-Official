@@ -2517,17 +2517,6 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
   }
 ];
 
-export const fetchById = async (id: string, type: string): Promise<MediaItem | null> => {
-  let source: MediaItem[] = [];
-  
-  if (type === 'movie') source = UNIQUE_MOVIES;
-  else if (type === 'tv') source = UNIQUE_TV_SHOWS;
-  else if (type === 'sports') source = UNIQUE_SPORTS;
-  else if (type === 'tv_live') source = UNIQUE_TV_LIVE;
-  
-  const item = source.find(i => i.id === id);
-  return item || null;
-};
 
 // Fetch functions to simulate API calls
 export const fetchMovies = async (): Promise<MediaItem[]> => {
