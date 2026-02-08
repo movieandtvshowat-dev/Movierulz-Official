@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Sitemap: https://7movierulz.netlify.app/sitemap.xml
+Sitemap: https://movierulz-official.netlify.app/sitemap.xml
 
 User-agent: Googlebot
 Allow: /

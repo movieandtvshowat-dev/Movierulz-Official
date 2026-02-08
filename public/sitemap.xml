@@ -7,63 +7,63 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 
   <url>
-    <loc>https://7movierulz.netlify.app/</loc>
+    <loc>https://movierulz-official.netlify.app/</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/movies</loc>
+    <loc>https://movierulz-official.netlify.app/#/movies</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/tv</loc>
+    <loc>https://movierulz-official.netlify.app/#/tv</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/sports</loc>
+    <loc>https://movierulz-official.netlify.app/#/sports</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/tv_live</loc>
+    <loc>https://movierulz-official.netlify.app/#/tv_live</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/contact</loc>
+    <loc>https://movierulz-official.netlify.app/#/contact</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/faq</loc>
+    <loc>https://movierulz-official.netlify.app/#/faq</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/privacy</loc>
+    <loc>https://movierulz-official.netlify.app/#/privacy</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://7movierulz.netlify.app/#/terms</loc>
+    <loc>https://movierulz-official.netlify.app/#/terms</loc>
     <lastmod>2026-01-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
