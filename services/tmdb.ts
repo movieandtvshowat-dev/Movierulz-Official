@@ -1,8 +1,6 @@
 import { MediaItem } from "../types";
 
-const API_KEY = 'be3e130c5ee08bf14bc9078514f1999a';
-const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZTNlMTMwYzVlZTA4YmYxNGJjOTA3ODUxNGYxOTk5YSIsIm5iZiI6MTcwNzkxNjc1Ni4xNDksInN1YiI6IjY1Y2NiZGQ0NGEwYjE5MDE4NmNmMTljYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.WePxGQ9q3fHgGVce48l20ac7N0qLLd1QRxUw48PD5LE';
-
+const API_KEY = (import.meta as any).env?.VITE_TMDB_API_KEY || "";
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 const BACKDROP_BASE = "https://image.tmdb.org/t/p/original";
@@ -2516,7 +2514,6 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
     overview: "Geralt of Rivia, a mutated monster-hunter for hire.",
   }
 ];
-
 
 // Fetch functions to simulate API calls
 export const fetchMovies = async (): Promise<MediaItem[]> => {
