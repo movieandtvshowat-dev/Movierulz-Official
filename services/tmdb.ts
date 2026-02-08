@@ -2532,6 +2532,47 @@ export const fetchTVLive = async (): Promise<MediaItem[]> => {
   return UNIQUE_TV_LIVE;
 };
 
+// ADD THIS TO YOUR tmdb.ts FILE AT THE END (before the export statements or after UNIQUE arrays)
+
+// TMDB API Search Function
+export const searchContent = async (query: string): Promise<MediaItem[]> => {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  try {
+    const searchQuery = encodeURIComponent(query.trim());
+    const response = await fetch(
+      `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false`
+    );
+
+    if (!response.ok) {
+      throw new Error('Search failed');
+    }
+
+    const data = await response.json();
+    
+    const results: MediaItem[] = (data.results || [])
+      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+      .map((item: any) => ({
+        id: String(item.id),
+        title: item.title || item.name || '',
+        poster_path: item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : '',
+        backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
+        release_date: item.release_date || item.first_air_date || '',
+        vote_average: item.vote_average || 0,
+        overview: item.overview || '',
+        media_type: item.media_type,
+        genres: item.genre_ids || [],
+      }));
+
+    return results;
+  } catch (error) {
+    console.error('TMDB search error:', error);
+    return [];
+  }
+};
+
 export const fetchById = async (id: string, type: string): Promise<MediaItem | null> => {
   let source: MediaItem[] = [];
   

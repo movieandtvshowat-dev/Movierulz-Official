@@ -393,7 +393,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
-import { fetchMovies, fetchTVShows, fetchSports, fetchTVLive } from '../services/tmdb';
+import { fetchMovies, fetchTVShows, fetchSports, fetchTVLive, searchContent } from '../services/tmdb';
 import { MediaItem } from '../types';
 import HeroSlider from '../components/HeroSlider';
 import MovieCard from '../components/MovieCard';
@@ -533,25 +533,7 @@ const Home: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // CLIENT-SIDE SEARCH FUNCTION
-  const performSearch = (query: string): MediaItem[] => {
-    if (!query || query.trim().length < 2) return [];
-    
-    const lowerQuery = query.toLowerCase().trim();
-    const allItems = [...movies, ...tvShows, ...sports, ...tvLive];
-    
-    return allItems.filter(item => {
-      const title = (item.title || '').toLowerCase();
-      const overview = (item.overview || '').toLowerCase();
-      const genres = item.genres?.map(g => g.toLowerCase()).join(' ') || '';
-      
-      return title.includes(lowerQuery) || 
-             overview.includes(lowerQuery) || 
-             genres.includes(lowerQuery);
-    });
-  };
-
-  // Search Handler
+  // TMDB API SEARCH HANDLER
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim() || searchQuery.trim().length < 2) return;
@@ -559,12 +541,15 @@ const Home: React.FC = () => {
     setIsSearching(true);
     setShowSearchResults(true);
     
-    // Simulate async search with slight delay for UX
-    setTimeout(() => {
-      const results = performSearch(searchQuery);
+    try {
+      const results = await searchContent(searchQuery);
       setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 300);
+    }
   };
 
   const clearSearch = () => {
@@ -584,7 +569,13 @@ const Home: React.FC = () => {
 
   // Handle Search from URL params
   if (searchQueryParam) {
-    const results = performSearch(searchQueryParam);
+    // For URL params, use local search
+    const lowerQuery = searchQueryParam.toLowerCase();
+    const allItems = [...movies, ...tvShows, ...sports, ...tvLive];
+    const results = allItems.filter(item => 
+        item.title.toLowerCase().includes(lowerQuery) || 
+        item.genres?.some(g => g.toLowerCase().includes(lowerQuery))
+    );
 
     return (
         <div className="bg-miraj-black min-h-screen pt-24 pb-20 px-4">
@@ -720,7 +711,7 @@ const Home: React.FC = () => {
 
       <HeroSlider items={heroItems} />
       
-      {/* SEARCH SECTION */}
+      {/* SEARCH SECTION - USES TMDB API */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-8 md:mt-12">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSearch} className="relative">
@@ -730,7 +721,7 @@ const Home: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search movies, TV shows, sports, live TV..."
+                placeholder="Search movies & TV shows from TMDB..."
                 className="flex-1 bg-transparent text-white placeholder-gray-400 outline-none px-2 py-3 text-sm md:text-base"
               />
               {searchQuery && (
@@ -753,12 +744,12 @@ const Home: React.FC = () => {
             </div>
           </form>
 
-          {/* SEARCH RESULTS */}
+          {/* SEARCH RESULTS FROM TMDB API */}
           {showSearchResults && (
             <div className="mt-8 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl md:text-2xl font-bold text-white">
-                  Search Results {searchResults.length > 0 && (
+                  TMDB Search Results {searchResults.length > 0 && (
                     <span className="text-miraj-gold ml-2">({searchResults.length})</span>
                   )}
                 </h2>
@@ -773,7 +764,7 @@ const Home: React.FC = () => {
               {isSearching ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="w-12 h-12 border-4 border-white/10 border-t-miraj-gold rounded-full animate-spin mb-4"></div>
-                  <p className="text-gray-400">Searching...</p>
+                  <p className="text-gray-400">Searching TMDB database...</p>
                 </div>
               ) : searchResults.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
@@ -785,7 +776,7 @@ const Home: React.FC = () => {
                 <div className="flex flex-col items-center justify-center py-16">
                   <Search className="text-gray-600 mb-4" size={48} />
                   <p className="text-gray-400 text-center">
-                    No results found for "<span className="text-white font-semibold">{searchQuery}</span>"
+                    No results found on TMDB for "<span className="text-white font-semibold">{searchQuery}</span>"
                   </p>
                   <p className="text-gray-500 text-sm mt-2">Try a different search term</p>
                 </div>
