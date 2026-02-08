@@ -2515,23 +2515,6 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
   }
 ];
 
-// Fetch functions to simulate API calls
-export const fetchMovies = async (): Promise<MediaItem[]> => {
-  return UNIQUE_MOVIES;
-};
-
-export const fetchTVShows = async (): Promise<MediaItem[]> => {
-  return UNIQUE_TV_SHOWS;
-};
-
-export const fetchSports = async (): Promise<MediaItem[]> => {
-  return UNIQUE_SPORTS;
-};
-
-export const fetchTVLive = async (): Promise<MediaItem[]> => {
-  return UNIQUE_TV_LIVE;
-};
-
 // ADD THIS TO YOUR tmdb.ts FILE AT THE END (before the export statements or after UNIQUE arrays)
 
 // TMDB API Search Function
@@ -2572,6 +2555,24 @@ export const searchContent = async (query: string): Promise<MediaItem[]> => {
     return [];
   }
 };
+
+// Fetch functions to simulate API calls
+export const fetchMovies = async (): Promise<MediaItem[]> => {
+  return UNIQUE_MOVIES;
+};
+
+export const fetchTVShows = async (): Promise<MediaItem[]> => {
+  return UNIQUE_TV_SHOWS;
+};
+
+export const fetchSports = async (): Promise<MediaItem[]> => {
+  return UNIQUE_SPORTS;
+};
+
+export const fetchTVLive = async (): Promise<MediaItem[]> => {
+  return UNIQUE_TV_LIVE;
+};
+
 
 export const fetchById = async (id: string, type: string): Promise<MediaItem | null> => {
   let source: MediaItem[] = [];
