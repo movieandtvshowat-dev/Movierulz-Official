@@ -1403,61 +1403,6 @@
 // ];
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // // 15 UNIQUE TV SHOWS (ALL FROM TMDB)
 // export const UNIQUE_TV_SHOWS: MediaItem[] = [
 //  {
@@ -1889,10 +1834,6 @@
 // ];
 
 
-
-
-
-
 // // Fetch functions to simulate API calls
 // export const fetchMovies = async (): Promise<MediaItem[]> => {
 //   return UNIQUE_MOVIES;
@@ -1934,6 +1875,64 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import { MediaItem } from "../types";
 
 // const API_KEY = 'be3e130c5ee08bf14bc9078514f1999a';
@@ -1948,7 +1947,7 @@
 //   return baseTime.toISOString();
 // };
 
-// // SEARCH RESULT STREAMS - SIMPLE AND WORKING
+// // SEARCH RESULT STREAMS - FIXED
 // const getSearchMovieStreams = (tmdbId: string) => {
 //   return {
 //     "Server 1": `https://xprime.today/watch/${tmdbId}`,
@@ -1959,17 +1958,20 @@
 //   };
 // };
 
-// const getSearchTVStreams = (tmdbId: string) => {
+// // TV SHOW STREAMS EXACTLY AS YOU WANT
+// const getSearchTVStreams = (tmdbId: string, season: string = "1", episode: string = "1") => {
 //   return {
-//     "Server 1": `ttps://xprime.today/watch/${tmdbId}/${season}/${episode}`,
-//     "Server 2": `https://vidsrc.xyz/embed/tv/${tmdbId}`,
-//     "Server 3": `https://2embed.org/embed/tv?tmdb=${tmdbId}`,
+//     "Server 1": `https://xprime.today/watch/${tmdbId}/${season}/${episode}`,
+//     "Server 2": `https://www.vidking.net/embed/tv/${tmdbId}/${season}/${episode}?autoPlay=true&nextEpisode=true&episodeSelector=true`,
+//     "Server 3": `https://api.cinezo.net/embed/tmdb-tv-${tmdbId}/${season}/${episode}`,
+//     "Server 4": `https://www.cinezo.net/watch/tv/${tmdbId}?season=${season}&episode=${episode}`,
+//     "Server 5": `https://vidsrc-embed.ru/embed/tv/${tmdbId}/${season}/${episode}`,
 //   };
 // };
 
-// // LOCAL MOVIES
+// // LOCAL MOVIES - ADD ALL YOUR MOVIES HERE
 // export const UNIQUE_MOVIES: MediaItem[] = [
-  //  {
+  //      {
   //   id: "maaldar-2026",
   //   title: "Maaldar (2026)",
   //   poster_path: "/images/movie/mal.jpg",
@@ -3317,11 +3319,12 @@
   //   genres: ["Action", "Crime", "Drama"],
   //   overview: "Batman faces the Joker in Gotham City.",
   // },
+
 // ];
 
-// // LOCAL TV SHOWS
+// // LOCAL TV SHOWS - ADD ALL YOUR TV SHOWS HERE
 // export const UNIQUE_TV_SHOWS: MediaItem[] = [
-  //  {
+  //    {
   //   id: "mayasabha-s01-2026-multi-lang",
   //   title: "Mayasabha S01 (2026) Multi-Lang",
   //   poster_path: "https://media.themoviedb.org/t/p/w500/ddhOEoAqefgzcxlx5hIvkFpF9cw.jpg",
@@ -3770,9 +3773,9 @@
 //   }
 // ];
 
-// // LIVE TV
+// // LIVE TV - ADD ALL YOUR LIVE TV HERE
 // export const UNIQUE_TV_LIVE: MediaItem[] = [
-//     {
+//       {
 //     id: "alzazeera-news-channel-hd",
 //     title: "Al Jazeera News Live HD",
 //     poster_path: "https://www.vhv.rs/dpng/d/492-4928236_al-jazeera-news-logo-hd-png-download.png",
@@ -4399,7 +4402,6 @@
 //     overview:
 //       "Live Adult channel featuring Hot, sexy and Mind Blowing content.",
 //   },
-
 // ];
 
 // // GET ALL LOCAL ITEMS
@@ -4412,11 +4414,12 @@
 //   ];
 // };
 
-// // SIMPLE SEARCH FUNCTION
+// // FIXED: WORKING SEARCH FUNCTION THAT DISPLAYS BOTH MOVIES AND TV SHOWS
 // export const searchContent = async (query: string): Promise<MediaItem[]> => {
-//   console.log("🔍 SEARCH CALLED FOR:", query);
+//   console.log("🔍 SEARCH STARTED FOR:", query);
   
 //   if (!query || query.trim().length < 2) {
+//     console.log("❌ Query too short");
 //     return [];
 //   }
 
@@ -4424,7 +4427,7 @@
 //   const allResults: MediaItem[] = [];
   
 //   try {
-//     // Search local data
+//     // 1. SEARCH LOCAL DATA FIRST
 //     const allLocalItems = getAllLocalItems();
     
 //     const localResults = allLocalItems.filter(item => {
@@ -4434,78 +4437,123 @@
 //       return titleMatch || genreMatch || overviewMatch;
 //     });
     
-//     console.log("📊 Local results found:", localResults.length);
-    
-//     // Add local results
+//     console.log("📊 Local results:", localResults.length);
 //     allResults.push(...localResults);
     
-//     // Try TMDB API
-//     console.log("🌐 Trying TMDB API...");
+//     // 2. SEARCH TMDB API - SEPARATE CALLS FOR MOVIES AND TV
+//     console.log("🌐 Fetching from TMDB API...");
+    
 //     const searchQuery = encodeURIComponent(query);
-//     const url = `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`;
     
-//     const response = await fetch(url);
+//     // PROMISE ALL FOR BOTH MOVIES AND TV SHOWS
+//     const [movieResponse, tvResponse] = await Promise.allSettled([
+//       fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`),
+//       fetch(`${BASE_URL}/search/tv?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`)
+//     ]);
     
-//     if (response.ok) {
-//       const data = await response.json();
+//     // PROCESS MOVIE RESULTS
+//     if (movieResponse.status === 'fulfilled' && movieResponse.value.ok) {
+//       const movieData = await movieResponse.value.json();
+//       console.log("🎬 Movie API results:", movieData.results?.length || 0);
       
-//       if (data.results && data.results.length > 0) {
-//         const tmdbResults = data.results
-//           .filter((item: any) => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path)
+//       if (movieData.results && movieData.results.length > 0) {
+//         const movieResults = movieData.results
+//           .filter((item: any) => item.poster_path)
 //           .map((item: any) => {
-//             // Check for duplicates
-//             const existingLocal = allLocalItems.find(local => 
-//               local.id.includes(item.id.toString())
+//             // Check if already in local results
+//             const existing = allResults.find(r => 
+//               r.title.toLowerCase() === item.title.toLowerCase() || 
+//               r.id === `tmdb-movie-${item.id}`
 //             );
             
-//             if (existingLocal) {
-//               return null;
-//             }
-            
-//             // Get streams for search results
-//             let streams = {};
-//             if (item.media_type === 'movie') {
-//               streams = getSearchMovieStreams(item.id);
-//             } else if (item.media_type === 'tv') {
-//               streams = getSearchTVStreams(item.id);
-//             }
-            
-//             // Fix media_type to match allowed values
-//             const mediaType = item.media_type === 'movie' ? 'movie' : 
-//                              item.media_type === 'tv' ? 'tv' : 'movie';
+//             if (existing) return null;
             
 //             return {
-//               id: `tmdb-${item.id}-${mediaType}`,
-//               title: item.title || item.name || 'Untitled',
-//               poster_path: item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : '',
+//               id: `tmdb-movie-${item.id}`,
+//               title: item.title || 'Untitled Movie',
+//               poster_path: `${IMAGE_BASE}${item.poster_path}`,
 //               backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
-//               release_date: item.release_date || item.first_air_date || '2024-01-01',
+//               release_date: item.release_date || '2024-01-01',
 //               vote_average: item.vote_average || 0,
-//               duration: item.media_type === 'movie' ? '2h' : 'Series',
-//               media_type: mediaType,
-//               genres: item.genre_ids ? item.genre_ids.slice(0, 3).map(() => 'General') : ['General'],
-//               streams: streams,
+//               duration: '2h',
+//               media_type: 'movie',
+//               genres: item.genre_ids?.slice(0, 3).map(() => 'General') || ['General'],
+//               streams: getSearchMovieStreams(item.id.toString()),
 //               overview: item.overview || 'No description available.'
 //             };
 //           })
-//           .filter((item: MediaItem | null): item is MediaItem => item !== null);
+//           .filter((item: any) => item !== null);
         
-//         console.log("✅ TMDB results found:", tmdbResults.length);
-//         allResults.push(...tmdbResults);
+//         console.log("✅ Added API movies:", movieResults.length);
+//         allResults.push(...movieResults);
 //       }
+//     } else {
+//       console.log("❌ Movie API failed:", movieResponse.status);
 //     }
     
-//     // Remove duplicates
-//     const uniqueResults = allResults.filter((item, index, self) =>
-//       index === self.findIndex((t) => t.id === item.id)
-//     );
+//     // PROCESS TV SHOW RESULTS
+//     if (tvResponse.status === 'fulfilled' && tvResponse.value.ok) {
+//       const tvData = await tvResponse.value.json();
+//       console.log("📺 TV API results:", tvData.results?.length || 0);
+      
+//       if (tvData.results && tvData.results.length > 0) {
+//         const tvResults = tvData.results
+//           .filter((item: any) => item.poster_path)
+//           .map((item: any) => {
+//             // Check if already in local results
+//             const existing = allResults.find(r => 
+//               r.title.toLowerCase() === item.name.toLowerCase() || 
+//               r.id === `tmdb-tv-${item.id}`
+//             );
+            
+//             if (existing) return null;
+            
+//             return {
+//               id: `tmdb-tv-${item.id}`,
+//               title: item.name || 'Untitled TV Show',
+//               poster_path: `${IMAGE_BASE}${item.poster_path}`,
+//               backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
+//               release_date: item.first_air_date || '2024-01-01',
+//               vote_average: item.vote_average || 0,
+//               duration: 'Series',
+//               media_type: 'tv',
+//               genres: item.genre_ids?.slice(0, 3).map(() => 'General') || ['General'],
+//               streams: getSearchTVStreams(item.id.toString()), // FIXED: Using simplified TV streams
+//               overview: item.overview || 'No description available.'
+//             };
+//           })
+//           .filter((item: any) => item !== null);
+        
+//         console.log("✅ Added API TV shows:", tvResults.length);
+//         allResults.push(...tvResults);
+//       }
+//     } else {
+//       console.log("❌ TV API failed:", tvResponse.status);
+//     }
     
-//     console.log("🎯 Total unique results:", uniqueResults.length);
+//     // 3. RETURN RESULTS - SHOW BOTH MOVIES AND TV SHOWS TOGETHER
+//     console.log("🎯 TOTAL RESULTS BEFORE DEDUP:", allResults.length);
+    
+//     // Remove duplicates by ID
+//     const uniqueResults = Array.from(new Map(allResults.map(item => [item.id, item])).values());
+    
+//     // SORT BY TYPE: MOVIES FIRST, THEN TV SHOWS
+//     uniqueResults.sort((a, b) => {
+//       if (a.media_type === 'movie' && b.media_type !== 'movie') return -1;
+//       if (a.media_type !== 'movie' && b.media_type === 'movie') return 1;
+//       return 0;
+//     });
+    
+//     console.log("🎯 FINAL UNIQUE RESULTS:", uniqueResults.length);
+//     console.log("🎯 MOVIES:", uniqueResults.filter(r => r.media_type === 'movie').length);
+//     console.log("🎯 TV SHOWS:", uniqueResults.filter(r => r.media_type === 'tv').length);
+    
 //     return uniqueResults;
     
 //   } catch (error) {
-//     console.error("🔥 Search error:", error);
-//     // Return local results if TMDB fails
+//     console.error("🔥 SEARCH FAILED:", error);
+    
+//     // Fallback to local search only
 //     const allLocalItems = getAllLocalItems();
 //     const localResults = allLocalItems.filter(item => {
 //       const titleMatch = item.title.toLowerCase().includes(searchTerm);
@@ -4513,6 +4561,8 @@
 //       const overviewMatch = item.overview?.toLowerCase().includes(searchTerm);
 //       return titleMatch || genreMatch || overviewMatch;
 //     });
+    
+//     console.log("🔄 Fallback results:", localResults.length);
 //     return localResults;
 //   }
 // };
@@ -4551,30 +4601,25 @@
 //   const itemInAll = allLocalItems.find(i => i.id === id);
 //   if (itemInAll) return itemInAll;
   
-//   // If it's a TMDB item (starts with tmdb-)
+//   // If it's a TMDB item
 //   if (id.startsWith('tmdb-')) {
 //     const parts = id.split('-');
-//     const tmdbId = parts[1];
-//     const mediaType = parts[2] || 'movie';
+//     const tmdbId = parts[2];
+//     const mediaType = parts[1] || 'movie';
     
-//     // Fix media_type to match allowed values
-//     const fixedMediaType = mediaType === 'movie' ? 'movie' : 
-//                           mediaType === 'tv' ? 'tv' : 'movie';
-    
-//     // Try to fetch details from TMDB
 //     try {
-//       const url = `${BASE_URL}/${fixedMediaType}/${tmdbId}?api_key=${API_KEY}&language=en-US`;
+//       const url = `${BASE_URL}/${mediaType}/${tmdbId}?api_key=${API_KEY}&language=en-US`;
 //       const response = await fetch(url);
       
 //       if (response.ok) {
 //         const data = await response.json();
         
-//         // Get streams for search results
+//         // Get streams
 //         let streams = {};
-//         if (fixedMediaType === 'movie') {
+//         if (mediaType === 'movie') {
 //           streams = getSearchMovieStreams(tmdbId);
-//         } else if (fixedMediaType === 'tv') {
-//           streams = getSearchTVStreams(tmdbId);
+//         } else if (mediaType === 'tv') {
+//           streams = getSearchTVStreams(tmdbId); // Use simplified TV streams
 //         }
         
 //         return {
@@ -4584,8 +4629,8 @@
 //           backdrop_path: data.backdrop_path ? `${BACKDROP_BASE}${data.backdrop_path}` : '',
 //           release_date: data.release_date || data.first_air_date || '2024-01-01',
 //           vote_average: data.vote_average || 0,
-//           duration: fixedMediaType === 'movie' ? '2h' : 'Series',
-//           media_type: fixedMediaType,
+//           duration: mediaType === 'movie' ? '2h' : 'Series',
+//           media_type: mediaType,
 //           genres: data.genres?.map((g: any) => g.name) || ['General'],
 //           streams: streams,
 //           overview: data.overview || 'No description available.'
@@ -4609,8 +4654,6 @@
 //   const allItems = getAllLocalItems();
 //   return allItems.find(item => item.id === id) || null;
 // };
-
-
 
 
 
@@ -4641,7 +4684,6 @@ const getSearchMovieStreams = (tmdbId: string) => {
   };
 };
 
-// TV SHOW STREAMS EXACTLY AS YOU WANT
 const getSearchTVStreams = (tmdbId: string, season: string = "1", episode: string = "1") => {
   return {
     "Server 1": `https://xprime.today/watch/${tmdbId}/${season}/${episode}`,
@@ -4652,9 +4694,9 @@ const getSearchTVStreams = (tmdbId: string, season: string = "1", episode: strin
   };
 };
 
-// LOCAL MOVIES - ADD ALL YOUR MOVIES HERE
+// LOCAL MOVIES - YOUR ACTUAL DATA
 export const UNIQUE_MOVIES: MediaItem[] = [
-     {
+         {
     id: "maaldar-2026",
     title: "Maaldar (2026)",
     poster_path: "/images/movie/mal.jpg",
@@ -6002,12 +6044,12 @@ export const UNIQUE_MOVIES: MediaItem[] = [
     genres: ["Action", "Crime", "Drama"],
     overview: "Batman faces the Joker in Gotham City.",
   },
-
+  // ADD ALL YOUR OTHER MOVIES HERE
 ];
 
-// LOCAL TV SHOWS - ADD ALL YOUR TV SHOWS HERE
+// LOCAL TV SHOWS - YOUR ACTUAL DATA
 export const UNIQUE_TV_SHOWS: MediaItem[] = [
-     {
+       {
     id: "mayasabha-s01-2026-multi-lang",
     title: "Mayasabha S01 (2026) Multi-Lang",
     poster_path: "https://media.themoviedb.org/t/p/w500/ddhOEoAqefgzcxlx5hIvkFpF9cw.jpg",
@@ -6433,7 +6475,7 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
     },
     overview: "Geralt of Rivia, a mutated monster-hunter for hire.",
   },
-
+  // ADD ALL YOUR OTHER TV SHOWS HERE
 ];
 
 // SPORTS
@@ -6456,9 +6498,9 @@ export const UNIQUE_SPORTS: MediaItem[] = [
   }
 ];
 
-// LIVE TV - ADD ALL YOUR LIVE TV HERE
+// LIVE TV - YOUR ACTUAL DATA
 export const UNIQUE_TV_LIVE: MediaItem[] = [
-      {
+        {
     id: "alzazeera-news-channel-hd",
     title: "Al Jazeera News Live HD",
     poster_path: "https://www.vhv.rs/dpng/d/492-4928236_al-jazeera-news-logo-hd-png-download.png",
@@ -7085,6 +7127,7 @@ export const UNIQUE_TV_LIVE: MediaItem[] = [
     overview:
       "Live Adult channel featuring Hot, sexy and Mind Blowing content.",
   },
+  // ADD ALL YOUR OTHER LIVE TV HERE
 ];
 
 // GET ALL LOCAL ITEMS
@@ -7097,12 +7140,11 @@ const getAllLocalItems = (): MediaItem[] => {
   ];
 };
 
-// FIXED: WORKING SEARCH FUNCTION THAT DISPLAYS BOTH MOVIES AND TV SHOWS
+// SIMPLE SEARCH FUNCTION THAT FUCKING WORKS
 export const searchContent = async (query: string): Promise<MediaItem[]> => {
-  console.log("🔍 SEARCH STARTED FOR:", query);
+  console.log("🔍 SEARCH CALLED FOR:", query);
   
   if (!query || query.trim().length < 2) {
-    console.log("❌ Query too short");
     return [];
   }
 
@@ -7110,7 +7152,7 @@ export const searchContent = async (query: string): Promise<MediaItem[]> => {
   const allResults: MediaItem[] = [];
   
   try {
-    // 1. SEARCH LOCAL DATA FIRST
+    // 1. SEARCH LOCAL DATA
     const allLocalItems = getAllLocalItems();
     
     const localResults = allLocalItems.filter(item => {
@@ -7123,120 +7165,111 @@ export const searchContent = async (query: string): Promise<MediaItem[]> => {
     console.log("📊 Local results:", localResults.length);
     allResults.push(...localResults);
     
-    // 2. SEARCH TMDB API - SEPARATE CALLS FOR MOVIES AND TV
-    console.log("🌐 Fetching from TMDB API...");
-    
+    // 2. SEARCH TMDB API FOR MOVIES
     const searchQuery = encodeURIComponent(query);
     
-    // PROMISE ALL FOR BOTH MOVIES AND TV SHOWS
-    const [movieResponse, tvResponse] = await Promise.allSettled([
-      fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`),
-      fetch(`${BASE_URL}/search/tv?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`)
-    ]);
-    
-    // PROCESS MOVIE RESULTS
-    if (movieResponse.status === 'fulfilled' && movieResponse.value.ok) {
-      const movieData = await movieResponse.value.json();
-      console.log("🎬 Movie API results:", movieData.results?.length || 0);
+    // Search movies
+    try {
+      const movieUrl = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`;
+      const movieResponse = await fetch(movieUrl);
       
-      if (movieData.results && movieData.results.length > 0) {
-        const movieResults = movieData.results
-          .filter((item: any) => item.poster_path)
-          .map((item: any) => {
-            // Check if already in local results
-            const existing = allResults.find(r => 
-              r.title.toLowerCase() === item.title.toLowerCase() || 
-              r.id === `tmdb-movie-${item.id}`
-            );
-            
-            if (existing) return null;
-            
-            return {
-              id: `tmdb-movie-${item.id}`,
-              title: item.title || 'Untitled Movie',
-              poster_path: `${IMAGE_BASE}${item.poster_path}`,
-              backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
-              release_date: item.release_date || '2024-01-01',
-              vote_average: item.vote_average || 0,
-              duration: '2h',
-              media_type: 'movie',
-              genres: item.genre_ids?.slice(0, 3).map(() => 'General') || ['General'],
-              streams: getSearchMovieStreams(item.id.toString()),
-              overview: item.overview || 'No description available.'
-            };
-          })
-          .filter((item: any) => item !== null);
+      if (movieResponse.ok) {
+        const movieData = await movieResponse.json();
         
-        console.log("✅ Added API movies:", movieResults.length);
-        allResults.push(...movieResults);
+        if (movieData.results && movieData.results.length > 0) {
+          const movieResults = movieData.results
+            .filter((item: any) => item.poster_path)
+            .map((item: any) => {
+              // Check if already exists
+              const exists = allResults.some(r => 
+                r.id === `tmdb-movie-${item.id}` || 
+                r.title.toLowerCase() === item.title.toLowerCase()
+              );
+              
+              if (exists) return null;
+              
+              return {
+                id: `tmdb-movie-${item.id}`,
+                title: item.title || 'Untitled Movie',
+                poster_path: `${IMAGE_BASE}${item.poster_path}`,
+                backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
+                release_date: item.release_date || '2024-01-01',
+                vote_average: item.vote_average || 0,
+                duration: '2h',
+                media_type: 'movie' as const,
+                genres: ['General'],
+                streams: getSearchMovieStreams(item.id.toString()),
+                overview: item.overview || 'No description available.'
+              };
+            })
+            .filter((item: any) => item !== null);
+          
+          console.log("✅ Movies from API:", movieResults.length);
+          allResults.push(...movieResults);
+        }
       }
-    } else {
-      console.log("❌ Movie API failed:", movieResponse.status);
+    } catch (error) {
+      console.error("Movie API error:", error);
     }
     
-    // PROCESS TV SHOW RESULTS
-    if (tvResponse.status === 'fulfilled' && tvResponse.value.ok) {
-      const tvData = await tvResponse.value.json();
-      console.log("📺 TV API results:", tvData.results?.length || 0);
+    // Search TV shows
+    try {
+      const tvUrl = `${BASE_URL}/search/tv?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false&language=en-US`;
+      const tvResponse = await fetch(tvUrl);
       
-      if (tvData.results && tvData.results.length > 0) {
-        const tvResults = tvData.results
-          .filter((item: any) => item.poster_path)
-          .map((item: any) => {
-            // Check if already in local results
-            const existing = allResults.find(r => 
-              r.title.toLowerCase() === item.name.toLowerCase() || 
-              r.id === `tmdb-tv-${item.id}`
-            );
-            
-            if (existing) return null;
-            
-            return {
-              id: `tmdb-tv-${item.id}`,
-              title: item.name || 'Untitled TV Show',
-              poster_path: `${IMAGE_BASE}${item.poster_path}`,
-              backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
-              release_date: item.first_air_date || '2024-01-01',
-              vote_average: item.vote_average || 0,
-              duration: 'Series',
-              media_type: 'tv',
-              genres: item.genre_ids?.slice(0, 3).map(() => 'General') || ['General'],
-              streams: getSearchTVStreams(item.id.toString()), // FIXED: Using simplified TV streams
-              overview: item.overview || 'No description available.'
-            };
-          })
-          .filter((item: any) => item !== null);
+      if (tvResponse.ok) {
+        const tvData = await tvResponse.json();
         
-        console.log("✅ Added API TV shows:", tvResults.length);
-        allResults.push(...tvResults);
+        if (tvData.results && tvData.results.length > 0) {
+          const tvResults = tvData.results
+            .filter((item: any) => item.poster_path)
+            .map((item: any) => {
+              // Check if already exists
+              const exists = allResults.some(r => 
+                r.id === `tmdb-tv-${item.id}` || 
+                r.title.toLowerCase() === item.name.toLowerCase()
+              );
+              
+              if (exists) return null;
+              
+              return {
+                id: `tmdb-tv-${item.id}`,
+                title: item.name || 'Untitled TV Show',
+                poster_path: `${IMAGE_BASE}${item.poster_path}`,
+                backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
+                release_date: item.first_air_date || '2024-01-01',
+                vote_average: item.vote_average || 0,
+                duration: 'Series',
+                media_type: 'tv' as const,
+                genres: ['General'],
+                streams: getSearchTVStreams(item.id.toString(), "1", "1"),
+                overview: item.overview || 'No description available.'
+              };
+            })
+            .filter((item: any) => item !== null);
+          
+          console.log("✅ TV shows from API:", tvResults.length);
+          allResults.push(...tvResults);
+        }
       }
-    } else {
-      console.log("❌ TV API failed:", tvResponse.status);
+    } catch (error) {
+      console.error("TV API error:", error);
     }
     
-    // 3. RETURN RESULTS - SHOW BOTH MOVIES AND TV SHOWS TOGETHER
-    console.log("🎯 TOTAL RESULTS BEFORE DEDUP:", allResults.length);
+    // 3. RETURN RESULTS
+    console.log("🎯 Total results:", allResults.length);
     
-    // Remove duplicates by ID
-    const uniqueResults = Array.from(new Map(allResults.map(item => [item.id, item])).values());
-    
-    // SORT BY TYPE: MOVIES FIRST, THEN TV SHOWS
-    uniqueResults.sort((a, b) => {
-      if (a.media_type === 'movie' && b.media_type !== 'movie') return -1;
-      if (a.media_type !== 'movie' && b.media_type === 'movie') return 1;
-      return 0;
-    });
-    
-    console.log("🎯 FINAL UNIQUE RESULTS:", uniqueResults.length);
-    console.log("🎯 MOVIES:", uniqueResults.filter(r => r.media_type === 'movie').length);
-    console.log("🎯 TV SHOWS:", uniqueResults.filter(r => r.media_type === 'tv').length);
+    // Remove duplicates
+    const uniqueResults = allResults.filter((item, index, self) =>
+      index === self.findIndex((t) => t.id === item.id)
+    );
     
     return uniqueResults;
     
   } catch (error) {
-    console.error("🔥 SEARCH FAILED:", error);
+    console.error("Search failed:", error);
     
-    // Fallback to local search only
+    // Fallback to local search
     const allLocalItems = getAllLocalItems();
     const localResults = allLocalItems.filter(item => {
       const titleMatch = item.title.toLowerCase().includes(searchTerm);
@@ -7245,7 +7278,6 @@ export const searchContent = async (query: string): Promise<MediaItem[]> => {
       return titleMatch || genreMatch || overviewMatch;
     });
     
-    console.log("🔄 Fallback results:", localResults.length);
     return localResults;
   }
 };
@@ -7288,36 +7320,51 @@ export const fetchById = async (id: string, type: string): Promise<MediaItem | n
   if (id.startsWith('tmdb-')) {
     const parts = id.split('-');
     const tmdbId = parts[2];
-    const mediaType = parts[1] || 'movie';
+    const mediaTypeStr = parts[1];
+    
+    // FIX: Ensure media_type is one of the allowed values
+    let mediaType: 'movie' | 'tv' | 'sports' | 'tv_live';
+    if (mediaTypeStr === 'tv') {
+      mediaType = 'tv';
+    } else if (mediaTypeStr === 'sports') {
+      mediaType = 'sports';
+    } else if (mediaTypeStr === 'tv_live') {
+      mediaType = 'tv_live';
+    } else {
+      mediaType = 'movie';
+    }
     
     try {
-      const url = `${BASE_URL}/${mediaType}/${tmdbId}?api_key=${API_KEY}&language=en-US`;
-      const response = await fetch(url);
-      
-      if (response.ok) {
-        const data = await response.json();
+      // Only fetch from TMDB for movie and tv types
+      if (mediaType === 'movie' || mediaType === 'tv') {
+        const url = `${BASE_URL}/${mediaType}/${tmdbId}?api_key=${API_KEY}&language=en-US`;
+        const response = await fetch(url);
         
-        // Get streams
-        let streams = {};
-        if (mediaType === 'movie') {
-          streams = getSearchMovieStreams(tmdbId);
-        } else if (mediaType === 'tv') {
-          streams = getSearchTVStreams(tmdbId); // Use simplified TV streams
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Get streams
+          let streams = {};
+          if (mediaType === 'movie') {
+            streams = getSearchMovieStreams(tmdbId);
+          } else if (mediaType === 'tv') {
+            streams = getSearchTVStreams(tmdbId, "1", "1");
+          }
+          
+          return {
+            id: id,
+            title: data.title || data.name || 'Untitled',
+            poster_path: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
+            backdrop_path: data.backdrop_path ? `${BACKDROP_BASE}${data.backdrop_path}` : '',
+            release_date: data.release_date || data.first_air_date || '2024-01-01',
+            vote_average: data.vote_average || 0,
+            duration: mediaType === 'movie' ? '2h' : 'Series',
+            media_type: mediaType,
+            genres: data.genres?.map((g: any) => g.name) || ['General'],
+            streams: streams,
+            overview: data.overview || 'No description available.'
+          };
         }
-        
-        return {
-          id: id,
-          title: data.title || data.name || 'Untitled',
-          poster_path: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
-          backdrop_path: data.backdrop_path ? `${BACKDROP_BASE}${data.backdrop_path}` : '',
-          release_date: data.release_date || data.first_air_date || '2024-01-01',
-          vote_average: data.vote_average || 0,
-          duration: mediaType === 'movie' ? '2h' : 'Series',
-          media_type: mediaType,
-          genres: data.genres?.map((g: any) => g.name) || ['General'],
-          streams: streams,
-          overview: data.overview || 'No description available.'
-        };
       }
     } catch (error) {
       console.error("Error fetching TMDB details:", error);
