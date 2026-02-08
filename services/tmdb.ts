@@ -2515,9 +2515,7 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
   }
 ];
 
-// ADD THIS TO YOUR tmdb.ts FILE AT THE END (before the export statements or after UNIQUE arrays)
-
-// TMDB API Search Function
+// TMDB API Search Function - FIXED VERSION
 export const searchContent = async (query: string): Promise<MediaItem[]> => {
   if (!query || query.trim().length < 2) {
     return [];
@@ -2525,35 +2523,69 @@ export const searchContent = async (query: string): Promise<MediaItem[]> => {
 
   try {
     const searchQuery = encodeURIComponent(query.trim());
+    console.log(`Searching TMDB for: ${searchQuery} with API key: ${API_KEY ? 'Present' : 'Missing'}`);
+    
     const response = await fetch(
       `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false`
     );
 
     if (!response.ok) {
-      throw new Error('Search failed');
+      console.error('TMDB Search failed:', response.status, response.statusText);
+      throw new Error(`TMDB Search failed: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('TMDB Search results:', data.results?.length || 0);
     
     const results: MediaItem[] = (data.results || [])
-      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
-      .map((item: any) => ({
-        id: String(item.id),
-        title: item.title || item.name || '',
-        poster_path: item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : '',
-        backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
-        release_date: item.release_date || item.first_air_date || '',
-        vote_average: item.vote_average || 0,
-        overview: item.overview || '',
-        media_type: item.media_type,
-        genres: item.genre_ids || [],
-      }));
+      .filter((item: any) => {
+        // Only include movies and TV shows
+        const isMovieOrTV = item.media_type === 'movie' || item.media_type === 'tv';
+        // Also filter out items without poster
+        return isMovieOrTV && item.poster_path;
+      })
+      .map((item: any) => {
+        // Create a proper MediaItem object from TMDB response
+        const mediaItem: MediaItem = {
+          id: String(item.id),
+          title: item.title || item.name || 'Untitled',
+          poster_path: item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : '',
+          backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
+          release_date: item.release_date || item.first_air_date || '2024-01-01',
+          vote_average: item.vote_average || 0,
+          duration: item.media_type === 'movie' ? '2h' : 'Series',
+          media_type: item.media_type,
+          genres: item.genre_ids ? item.genre_ids.map((id: number) => String(id)) : [],
+          streams: {}, // Empty streams for TMDB results
+          overview: item.overview || 'No description available.'
+        };
+        return mediaItem;
+      });
 
+    console.log('Processed results:', results.length);
     return results;
   } catch (error) {
     console.error('TMDB search error:', error);
-    return [];
+    // Fallback to local search if TMDB fails
+    return fallbackSearch(query);
   }
+};
+
+// Fallback local search function
+const fallbackSearch = (query: string): MediaItem[] => {
+  const lowerQuery = query.toLowerCase();
+  const allItems = [
+    ...UNIQUE_MOVIES,
+    ...UNIQUE_TV_SHOWS,
+    ...UNIQUE_SPORTS,
+    ...UNIQUE_TV_LIVE
+  ];
+  
+  return allItems.filter(item => 
+    item.title.toLowerCase().includes(lowerQuery) || 
+    (item.genres && item.genres.some(g => g.toLowerCase().includes(lowerQuery))) ||
+    (item.overview && item.overview.toLowerCase().includes(lowerQuery))
+  );
 };
 
 // Fetch functions to simulate API calls
@@ -2572,7 +2604,6 @@ export const fetchSports = async (): Promise<MediaItem[]> => {
 export const fetchTVLive = async (): Promise<MediaItem[]> => {
   return UNIQUE_TV_LIVE;
 };
-
 
 export const fetchById = async (id: string, type: string): Promise<MediaItem | null> => {
   let source: MediaItem[] = [];

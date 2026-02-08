@@ -495,6 +495,7 @@ const Home: React.FC = () => {
   const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [timezoneOffset, setTimezoneOffset] = useState<number>(0);
@@ -533,19 +534,23 @@ const Home: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // TMDB API SEARCH HANDLER
+  // TMDB API SEARCH HANDLER - FIXED
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim() || searchQuery.trim().length < 2) return;
 
     setIsSearching(true);
+    setSearchError(null);
     setShowSearchResults(true);
     
     try {
+      console.log(`Starting search for: "${searchQuery}"`);
       const results = await searchContent(searchQuery);
+      console.log(`Search completed, found ${results.length} results`);
       setSearchResults(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Search failed:', error);
+      setSearchError(error.message || 'Search failed. Please try again.');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -556,6 +561,7 @@ const Home: React.FC = () => {
     setSearchQuery('');
     setSearchResults([]);
     setShowSearchResults(false);
+    setSearchError(null);
   };
 
   if (loading) {
@@ -596,7 +602,7 @@ const Home: React.FC = () => {
                 )}
             </div>
         </div>
-    )
+    );
   }
 
   const showAll = path === '/';
@@ -701,7 +707,7 @@ const Home: React.FC = () => {
             </div>
         </div>
     );
-  }
+  };
 
   return (
     <div className="bg-miraj-black min-h-screen pb-20">
@@ -723,8 +729,9 @@ const Home: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search movies & TV shows from TMDB..."
                 className="flex-1 bg-transparent text-white placeholder-gray-400 outline-none px-2 py-3 text-sm md:text-base"
+                disabled={isSearching}
               />
-              {searchQuery && (
+              {searchQuery && !isSearching && (
                 <button
                   type="button"
                   onClick={clearSearch}
@@ -734,12 +741,17 @@ const Home: React.FC = () => {
                   <X className="text-gray-400" size={18} />
                 </button>
               )}
+              {isSearching && (
+                <div className="p-2">
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-miraj-gold rounded-full animate-spin"></div>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSearching || searchQuery.trim().length < 2}
                 className="bg-miraj-gold hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                {isSearching ? 'Searching...' : 'Find'}
+                Search
               </button>
             </div>
           </form>
@@ -749,13 +761,15 @@ const Home: React.FC = () => {
             <div className="mt-8 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl md:text-2xl font-bold text-white">
-                  TMDB Search Results {searchResults.length > 0 && (
+                  TMDB Search Results 
+                  {searchResults.length > 0 && (
                     <span className="text-miraj-gold ml-2">({searchResults.length})</span>
                   )}
                 </h2>
                 <button
                   onClick={clearSearch}
                   className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="Close search results"
                 >
                   <X size={24} />
                 </button>
@@ -766,13 +780,27 @@ const Home: React.FC = () => {
                   <div className="w-12 h-12 border-4 border-white/10 border-t-miraj-gold rounded-full animate-spin mb-4"></div>
                   <p className="text-gray-400">Searching TMDB database...</p>
                 </div>
-              ) : searchResults.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                  {searchResults.map((item) => (
-                    <MovieCard key={`search-${item.media_type}-${item.id}`} item={item as any} />
-                  ))}
+              ) : searchError ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <AlertCircle className="text-red-500 mb-4" size={48} />
+                  <p className="text-red-400 text-center mb-2">{searchError}</p>
+                  <p className="text-gray-400 text-sm">Try again or check your API key</p>
                 </div>
-              ) : (
+              ) : searchResults.length > 0 ? (
+                <>
+                  <p className="text-gray-400 mb-4 text-sm">
+                    Showing results for: <span className="text-white font-semibold">"{searchQuery}"</span>
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                    {searchResults.map((item) => (
+                      <MovieCard 
+                        key={`search-${item.media_type}-${item.id}`} 
+                        item={item} 
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : searchQuery.trim().length >= 2 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <Search className="text-gray-600 mb-4" size={48} />
                   <p className="text-gray-400 text-center">
@@ -780,7 +808,7 @@ const Home: React.FC = () => {
                   </p>
                   <p className="text-gray-500 text-sm mt-2">Try a different search term</p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>
@@ -840,7 +868,7 @@ const Home: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <p className="text-sm items-center text-red-700 font-bold">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
+                <p className="text-sm items-center text-red-700 font-bold mt-4">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
             </div>
         )}
 
