@@ -575,9 +575,7 @@ const Home: React.FC = () => {
                 {sports.map(renderSportsRow)}
               </div>
             </div>
-            <p className="text-sm text-red-700 font-bold mt-4 px-4">
-              We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content.
-            </p>
+            <p className="text-sm items-center text-red-700 font-bold">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
           </div>
         )}
 
