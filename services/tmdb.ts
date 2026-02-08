@@ -1,6 +1,8 @@
 import { MediaItem } from "../types";
 
-const API_KEY = (import.meta as any).env?.VITE_TMDB_API_KEY || "";
+const API_KEY = 'be3e130c5ee08bf14bc9078514f1999a';
+const ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZTNlMTMwYzVlZTA4YmYxNGJjOTA3ODUxNGYxOTk5YSIsIm5iZiI6MTcwNzkxNjc1Ni4xNDksInN1YiI6IjY1Y2NiZGQ0NGEwYjE5MDE4NmNmMTljYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.WePxGQ9q3fHgGVce48l20ac7N0qLLd1QRxUw48PD5LE';
+
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 const BACKDROP_BASE = "https://image.tmdb.org/t/p/original";
@@ -2515,77 +2517,16 @@ export const UNIQUE_TV_SHOWS: MediaItem[] = [
   }
 ];
 
-// TMDB API Search Function - FIXED VERSION
-export const searchContent = async (query: string): Promise<MediaItem[]> => {
-  if (!query || query.trim().length < 2) {
-    return [];
-  }
-
-  try {
-    const searchQuery = encodeURIComponent(query.trim());
-    console.log(`Searching TMDB for: ${searchQuery} with API key: ${API_KEY ? 'Present' : 'Missing'}`);
-    
-    const response = await fetch(
-      `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${searchQuery}&page=1&include_adult=false`
-    );
-
-    if (!response.ok) {
-      console.error('TMDB Search failed:', response.status, response.statusText);
-      throw new Error(`TMDB Search failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('TMDB Search results:', data.results?.length || 0);
-    
-    const results: MediaItem[] = (data.results || [])
-      .filter((item: any) => {
-        // Only include movies and TV shows
-        const isMovieOrTV = item.media_type === 'movie' || item.media_type === 'tv';
-        // Also filter out items without poster
-        return isMovieOrTV && item.poster_path;
-      })
-      .map((item: any) => {
-        // Create a proper MediaItem object from TMDB response
-        const mediaItem: MediaItem = {
-          id: String(item.id),
-          title: item.title || item.name || 'Untitled',
-          poster_path: item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : '',
-          backdrop_path: item.backdrop_path ? `${BACKDROP_BASE}${item.backdrop_path}` : '',
-          release_date: item.release_date || item.first_air_date || '2024-01-01',
-          vote_average: item.vote_average || 0,
-          duration: item.media_type === 'movie' ? '2h' : 'Series',
-          media_type: item.media_type,
-          genres: item.genre_ids ? item.genre_ids.map((id: number) => String(id)) : [],
-          streams: {}, // Empty streams for TMDB results
-          overview: item.overview || 'No description available.'
-        };
-        return mediaItem;
-      });
-
-    console.log('Processed results:', results.length);
-    return results;
-  } catch (error) {
-    console.error('TMDB search error:', error);
-    // Fallback to local search if TMDB fails
-    return fallbackSearch(query);
-  }
-};
-
-// Fallback local search function
-const fallbackSearch = (query: string): MediaItem[] => {
-  const lowerQuery = query.toLowerCase();
-  const allItems = [
-    ...UNIQUE_MOVIES,
-    ...UNIQUE_TV_SHOWS,
-    ...UNIQUE_SPORTS,
-    ...UNIQUE_TV_LIVE
-  ];
+export const fetchById = async (id: string, type: string): Promise<MediaItem | null> => {
+  let source: MediaItem[] = [];
   
-  return allItems.filter(item => 
-    item.title.toLowerCase().includes(lowerQuery) || 
-    (item.genres && item.genres.some(g => g.toLowerCase().includes(lowerQuery))) ||
-    (item.overview && item.overview.toLowerCase().includes(lowerQuery))
-  );
+  if (type === 'movie') source = UNIQUE_MOVIES;
+  else if (type === 'tv') source = UNIQUE_TV_SHOWS;
+  else if (type === 'sports') source = UNIQUE_SPORTS;
+  else if (type === 'tv_live') source = UNIQUE_TV_LIVE;
+  
+  const item = source.find(i => i.id === id);
+  return item || null;
 };
 
 // Fetch functions to simulate API calls

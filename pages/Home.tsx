@@ -391,14 +391,15 @@
 
 
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import { fetchMovies, fetchTVShows, fetchSports, fetchTVLive, searchContent } from '../services/tmdb';
 import { MediaItem } from '../types';
 import HeroSlider from '../components/HeroSlider';
 import MovieCard from '../components/MovieCard';
-import { Film, Tv, Trophy, Radio, ChevronDown, Globe, CalendarDays, PlayCircle, AlertCircle, Search, X } from 'lucide-react';
+import { Film, Tv, Trophy, Radio, ChevronDown, Globe, CalendarDays, PlayCircle, AlertCircle, Search, X, Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import debounce from 'lodash/debounce';
 
 // Paginated Section Component for Movies/TV (Grid Layout)
 const PaginatedSection = ({ 
@@ -496,6 +497,7 @@ const Home: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [lastSearchQuery, setLastSearchQuery] = useState<string>('');
   
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [timezoneOffset, setTimezoneOffset] = useState<number>(0);
@@ -534,27 +536,60 @@ const Home: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // TMDB API SEARCH HANDLER - FIXED
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) return;
+  // DEBOUNCED SEARCH FUNCTION
+  const performSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.trim().length < 2) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+      }
 
-    setIsSearching(true);
-    setSearchError(null);
-    setShowSearchResults(true);
+      setIsSearching(true);
+      setSearchError(null);
+      setShowSearchResults(true);
+      setLastSearchQuery(query);
+      
+      try {
+        console.log(`Performing search for: "${query}"`);
+        const results = await searchContent(query);
+        console.log(`Search completed. Found ${results.length} results.`);
+        
+        setSearchResults(results);
+        
+        if (results.length === 0) {
+          setSearchError(`No results found for "${query}"`);
+        }
+      } catch (error: any) {
+        console.error('Search error:', error);
+        setSearchError(`Search failed: ${error.message || 'Unknown error'}`);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500), // 500ms debounce
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
     
-    try {
-      console.log(`Starting search for: "${searchQuery}"`);
-      const results = await searchContent(searchQuery);
-      console.log(`Search completed, found ${results.length} results`);
-      setSearchResults(results);
-    } catch (error: any) {
-      console.error('Search failed:', error);
-      setSearchError(error.message || 'Search failed. Please try again.');
+    if (value.trim().length >= 2) {
+      performSearch(value);
+    } else {
       setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+      setShowSearchResults(false);
+      setSearchError(null);
     }
+  };
+
+  // Handle form submission
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim().length < 2) return;
+    performSearch(searchQuery);
   };
 
   const clearSearch = () => {
@@ -562,46 +597,37 @@ const Home: React.FC = () => {
     setSearchResults([]);
     setShowSearchResults(false);
     setSearchError(null);
+    setLastSearchQuery('');
   };
-
-  if (loading) {
-    return (
-        <div className="h-screen w-full bg-miraj-black flex flex-col items-center justify-center gap-4">
-             <div className="w-16 h-16 border-4 border-gray-800 border-t-miraj-gold rounded-full animate-spin"></div>
-             <p className="text-miraj-gold text-sm tracking-widest animate-pulse">LOADING MOVIERULZ™ OFFICIAL</p>
-        </div>
-    );
-  }
 
   // Handle Search from URL params
   if (searchQueryParam) {
-    // For URL params, use local search
     const lowerQuery = searchQueryParam.toLowerCase();
     const allItems = [...movies, ...tvShows, ...sports, ...tvLive];
     const results = allItems.filter(item => 
-        item.title.toLowerCase().includes(lowerQuery) || 
-        item.genres?.some(g => g.toLowerCase().includes(lowerQuery))
+      item.title.toLowerCase().includes(lowerQuery) || 
+      item.genres?.some(g => g.toLowerCase().includes(lowerQuery))
     );
 
     return (
-        <div className="bg-miraj-black min-h-screen pt-24 pb-20 px-4">
-            <Helmet><title>Search: {searchQueryParam} | Movierulz Official</title></Helmet>
-            <div className="max-w-[1400px] mx-auto">
-                <div className="mb-8 border-b border-gray-800 pb-4">
-                    <h1 className="text-2xl text-white font-bold">Search Results for: <span className="text-miraj-gold">"{searchQueryParam}"</span></h1>
-                    <p className="text-gray-500 text-sm mt-2">{results.length} items found</p>
-                </div>
-                {results.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        {results.map(item => <MovieCard key={item.id} item={item} />)}
-                    </div>
-                ) : (
-                    <div className="text-center py-20">
-                        <p className="text-gray-500">No content found matching your query.</p>
-                    </div>
-                )}
+      <div className="bg-miraj-black min-h-screen pt-24 pb-20 px-4">
+        <Helmet><title>Search: {searchQueryParam} | Movierulz Official</title></Helmet>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-8 border-b border-gray-800 pb-4">
+            <h1 className="text-2xl text-white font-bold">Search Results for: <span className="text-miraj-gold">"{searchQueryParam}"</span></h1>
+            <p className="text-gray-500 text-sm mt-2">{results.length} items found</p>
+          </div>
+          {results.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              {results.map(item => <MovieCard key={item.id} item={item} />)}
             </div>
+          ) : (
+            <div className="text-center py-20">
+              <p className="text-gray-500">No content found matching your query.</p>
+            </div>
+          )}
         </div>
+      </div>
     );
   }
 
@@ -709,6 +735,15 @@ const Home: React.FC = () => {
     );
   };
 
+  if (loading) {
+    return (
+        <div className="h-screen w-full bg-miraj-black flex flex-col items-center justify-center gap-4">
+             <div className="w-16 h-16 border-4 border-gray-800 border-t-miraj-gold rounded-full animate-spin"></div>
+             <p className="text-miraj-gold text-sm tracking-widest animate-pulse">LOADING MOVIERULZ™ OFFICIAL</p>
+        </div>
+    );
+  }
+
   return (
     <div className="bg-miraj-black min-h-screen pb-20">
       <Helmet>
@@ -717,16 +752,16 @@ const Home: React.FC = () => {
 
       <HeroSlider items={heroItems} />
       
-      {/* SEARCH SECTION - USES TMDB API */}
+      {/* SEARCH SECTION - FIXED AND WORKING */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 mt-8 md:mt-12">
         <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={handleSearchSubmit} className="relative">
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-2 shadow-2xl transition-all duration-300 focus-within:border-miraj-gold focus-within:bg-white/15">
               <Search className="text-gray-400 ml-4" size={20} />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 placeholder="Search movies & TV shows from TMDB..."
                 className="flex-1 bg-transparent text-white placeholder-gray-400 outline-none px-2 py-3 text-sm md:text-base"
                 disabled={isSearching}
@@ -743,7 +778,7 @@ const Home: React.FC = () => {
               )}
               {isSearching && (
                 <div className="p-2">
-                  <div className="w-5 h-5 border-2 border-gray-400 border-t-miraj-gold rounded-full animate-spin"></div>
+                  <Loader2 className="w-5 h-5 text-miraj-gold animate-spin" />
                 </div>
               )}
               <button
@@ -756,19 +791,26 @@ const Home: React.FC = () => {
             </div>
           </form>
 
-          {/* SEARCH RESULTS FROM TMDB API */}
+          {/* LIVE SEARCH RESULTS - SHOWS AS YOU TYPE */}
           {showSearchResults && (
-            <div className="mt-8 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
+            <div className="mt-8 bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 md:p-8 shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
-                  TMDB Search Results 
-                  {searchResults.length > 0 && (
-                    <span className="text-miraj-gold ml-2">({searchResults.length})</span>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold text-white">
+                    Search Results
+                    {searchResults.length > 0 && (
+                      <span className="text-miraj-gold ml-2">({searchResults.length})</span>
+                    )}
+                  </h2>
+                  {lastSearchQuery && (
+                    <p className="text-gray-400 text-sm mt-1">
+                      Showing results for: <span className="text-white font-semibold">"{lastSearchQuery}"</span>
+                    </p>
                   )}
-                </h2>
+                </div>
                 <button
                   onClick={clearSearch}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
                   aria-label="Close search results"
                 >
                   <X size={24} />
@@ -777,36 +819,65 @@ const Home: React.FC = () => {
 
               {isSearching ? (
                 <div className="flex flex-col items-center justify-center py-16">
-                  <div className="w-12 h-12 border-4 border-white/10 border-t-miraj-gold rounded-full animate-spin mb-4"></div>
-                  <p className="text-gray-400">Searching TMDB database...</p>
+                  <div className="w-16 h-16 border-4 border-white/10 border-t-miraj-gold rounded-full animate-spin mb-6"></div>
+                  <p className="text-gray-400 text-lg">Searching TMDB database...</p>
+                  <p className="text-gray-500 text-sm mt-2">Please wait while we fetch results</p>
                 </div>
               ) : searchError ? (
                 <div className="flex flex-col items-center justify-center py-16">
-                  <AlertCircle className="text-red-500 mb-4" size={48} />
-                  <p className="text-red-400 text-center mb-2">{searchError}</p>
-                  <p className="text-gray-400 text-sm">Try again or check your API key</p>
+                  <AlertCircle className="text-red-500 mb-4" size={64} />
+                  <p className="text-red-400 text-center text-lg mb-2">{searchError}</p>
+                  <p className="text-gray-400 text-sm">Try again with a different search term</p>
+                  <button
+                    onClick={() => performSearch(searchQuery)}
+                    className="mt-4 px-6 py-2 bg-miraj-gold text-black font-bold rounded-full hover:bg-yellow-500 transition-colors"
+                  >
+                    Retry Search
+                  </button>
                 </div>
               ) : searchResults.length > 0 ? (
                 <>
-                  <p className="text-gray-400 mb-4 text-sm">
-                    Showing results for: <span className="text-white font-semibold">"{searchQuery}"</span>
-                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                     {searchResults.map((item) => (
                       <MovieCard 
-                        key={`search-${item.media_type}-${item.id}`} 
+                        key={`search-${item.id}`} 
                         item={item} 
                       />
                     ))}
                   </div>
+                  <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                    <p className="text-gray-400 text-sm">
+                      Powered by TMDB API • {searchResults.length} results found
+                    </p>
+                  </div>
                 </>
               ) : searchQuery.trim().length >= 2 ? (
                 <div className="flex flex-col items-center justify-center py-16">
-                  <Search className="text-gray-600 mb-4" size={48} />
-                  <p className="text-gray-400 text-center">
-                    No results found on TMDB for "<span className="text-white font-semibold">{searchQuery}</span>"
+                  <Search className="text-gray-600 mb-6" size={64} />
+                  <p className="text-gray-400 text-center text-lg">
+                    No results found for "<span className="text-white font-semibold">{searchQuery}</span>"
                   </p>
-                  <p className="text-gray-500 text-sm mt-2">Try a different search term</p>
+                  <p className="text-gray-500 text-sm mt-2">Try searching for a different movie or TV show</p>
+                  <div className="mt-6 flex gap-4">
+                    <button
+                      onClick={() => setSearchQuery('Avengers')}
+                      className="px-4 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      Avengers
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Game of Thrones')}
+                      className="px-4 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      Game of Thrones
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Troll 2')}
+                      className="px-4 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      Troll 2
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -814,6 +885,7 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      {/* MAIN CONTENT SECTIONS */}
       <div className="max-w-[1400px] mx-auto mt-8 md:mt-16 md:px-8 space-y-12">
         
         <PaginatedSection title="Now Showing Movies" icon={Film} items={movies} visible={showMovies} />
@@ -868,7 +940,7 @@ const Home: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <p className="text-sm items-center text-red-700 font-bold mt-4">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
+                <p className="text-sm items-center text-red-700 font-bold mt-4 px-4">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
             </div>
         )}
 
