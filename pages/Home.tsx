@@ -393,11 +393,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
-import { fetchMovies, fetchTVShows, fetchSports, fetchTVLive, searchContent } from '../services/tmdb';
+import { fetchMovies, fetchTVShows, fetchSports, fetchTVLive } from '../services/tmdb';
 import { MediaItem } from '../types';
 import HeroSlider from '../components/HeroSlider';
 import MovieCard from '../components/MovieCard';
-import { Film, Tv, Trophy, Radio, ChevronDown, Clock, Globe, CalendarDays, PlayCircle, AlertCircle, Search, X } from 'lucide-react';
+import { Film, Tv, Trophy, Radio, ChevronDown, Globe, CalendarDays, PlayCircle, AlertCircle, Search, X } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
 // Paginated Section Component for Movies/TV (Grid Layout)
@@ -469,15 +469,12 @@ const PaginatedSection = ({
 // Generate Timezone Offsets from -12 to +14 with 30-minute intervals
 const generateTimezones = () => {
   const zones = [];
-  // Loop from -24 to 28 representing -12.0 to +14.0 in 0.5 steps
   for (let i = -24; i <= 28; i++) {
     const offset = i / 2;
     const sign = offset >= 0 ? '+' : '-';
     const absOffset = Math.abs(offset);
     const hours = Math.floor(absOffset);
     const minutes = (absOffset % 1) * 60;
-    
-    // Format: GMT +05:30
     const label = `GMT ${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     zones.push({ label, value: offset });
   }
@@ -499,16 +496,12 @@ const Home: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   
-  // Real-time clock for status updates
   const [currentTime, setCurrentTime] = useState(Date.now());
-
-  // Default to GMT 0
   const [timezoneOffset, setTimezoneOffset] = useState<number>(0);
   
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const searchQueryParam = searchParams.get('search');
-  
   const path = location.pathname;
 
   useEffect(() => {
@@ -533,14 +526,30 @@ const Home: React.FC = () => {
     };
     loadData();
 
-    // Set up a ticker to update current time every minute
-    // This ensures statuses (Upcoming -> Live) update automatically
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => clearInterval(timer);
   }, []);
+
+  // CLIENT-SIDE SEARCH FUNCTION
+  const performSearch = (query: string): MediaItem[] => {
+    if (!query || query.trim().length < 2) return [];
+    
+    const lowerQuery = query.toLowerCase().trim();
+    const allItems = [...movies, ...tvShows, ...sports, ...tvLive];
+    
+    return allItems.filter(item => {
+      const title = (item.title || '').toLowerCase();
+      const overview = (item.overview || '').toLowerCase();
+      const genres = item.genres?.map(g => g.toLowerCase()).join(' ') || '';
+      
+      return title.includes(lowerQuery) || 
+             overview.includes(lowerQuery) || 
+             genres.includes(lowerQuery);
+    });
+  };
 
   // Search Handler
   const handleSearch = async (e: React.FormEvent) => {
@@ -549,15 +558,13 @@ const Home: React.FC = () => {
 
     setIsSearching(true);
     setShowSearchResults(true);
-    try {
-      const results = await searchContent(searchQuery);
+    
+    // Simulate async search with slight delay for UX
+    setTimeout(() => {
+      const results = performSearch(searchQuery);
       setSearchResults(results);
-    } catch (error) {
-      console.error('Search failed:', error);
-      setSearchResults([]);
-    } finally {
       setIsSearching(false);
-    }
+    }, 300);
   };
 
   const clearSearch = () => {
@@ -575,14 +582,9 @@ const Home: React.FC = () => {
     );
   }
 
-  // Handle Search Logic from URL params
+  // Handle Search from URL params
   if (searchQueryParam) {
-    const lowerQuery = searchQueryParam.toLowerCase();
-    const allItems = [...movies, ...tvShows, ...sports, ...tvLive];
-    const results = allItems.filter(item => 
-        item.title.toLowerCase().includes(lowerQuery) || 
-        item.genres?.some(g => g.toLowerCase().includes(lowerQuery))
-    );
+    const results = performSearch(searchQueryParam);
 
     return (
         <div className="bg-miraj-black min-h-screen pt-24 pb-20 px-4">
@@ -606,14 +608,12 @@ const Home: React.FC = () => {
     )
   }
 
-  // Determine what to show based on the current route
   const showAll = path === '/';
   const showMovies = showAll || path === '/movies';
   const showTV = showAll || path === '/tv';
   const showSports = showAll || path === '/sports';
   const showLive = showAll || path === '/tv_live';
 
-  // Generate SEO Meta Data
   const getPageTitle = () => {
     if (path === '/movies') return 'Watch Latest Movies | Movierulz Official';
     if (path === '/tv') return 'Watch TV Shows | Movierulz Official';
@@ -622,7 +622,6 @@ const Home: React.FC = () => {
     return 'Movierulz Official | Premium Video Entertainment';
   };
 
-  // Hero Items Logic
   let heroItems: MediaItem[] = [];
   if (path === '/movies') heroItems = movies.slice(0, 8);
   else if (path === '/tv') heroItems = tvShows.slice(0, 8);
@@ -630,20 +629,12 @@ const Home: React.FC = () => {
   else if (path === '/tv_live') heroItems = tvLive.slice(0, 8);
   else heroItems = [...movies.slice(0, 3), ...tvShows.slice(0, 2), ...sports.slice(0, 2)];
 
-  // --------------------------------------------------------------------------------
-  // SPORTS SCHEDULE LOGIC
-  // --------------------------------------------------------------------------------
-  
-  // Helper: Get Current Date in Selected Timezone for the Header
   const getHeaderDate = () => {
-    const now = new Date(currentTime); // Use reactive currentTime
-    // Get absolute UTC timestamp
+    const now = new Date(currentTime);
     const currentUTCTime = now.getTime();
-    // Shift timestamp by offset hours (in milliseconds)
     const targetTimeMs = currentUTCTime + (timezoneOffset * 3600000);
     const targetDate = new Date(targetTimeMs);
     
-    // Format using UTC zone to reflect the shifted time accurately
     return targetDate.toLocaleDateString('en-GB', { 
       weekday: 'long', 
       day: 'numeric', 
@@ -653,32 +644,24 @@ const Home: React.FC = () => {
     });
   };
 
-  // Render a Single Sports Row
   const renderSportsRow = (item: MediaItem) => {
-    // 1. Time Logic
     const eventTimeUTC = new Date(item.release_date).getTime();
     const durationMs = 4 * 60 * 60 * 1000;
     const endTimeUTC = eventTimeUTC + durationMs;
 
-    // 2. Status Determination (Based on reactive currentTime)
     let status: 'LIVE' | 'ENDED' | 'UPCOMING' = 'UPCOMING';
     if (currentTime > endTimeUTC) status = 'ENDED';
     else if (currentTime >= eventTimeUTC && currentTime <= endTimeUTC) status = 'LIVE';
 
-    // 3. Display Time Calculation (Relative to Offset)
-    // IMPORTANT: This strictly uses the item's fixed release_date. 
-    // It does not change with 'currentTime', only with 'timezoneOffset'.
     const offsetMs = timezoneOffset * 60 * 60 * 1000;
     const shiftedDate = new Date(eventTimeUTC + offsetMs);
     
-    // Check if the event date matches "Today" in the selected timezone
     const headerDateStr = getHeaderDate();
     const itemDateStr = shiftedDate.toLocaleDateString('en-GB', { 
         weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' 
     });
     const isToday = headerDateStr === itemDateStr;
 
-    // Formatting using UTC methods to ensure stability
     const hours = shiftedDate.getUTCHours();
     const minutes = shiftedDate.getUTCMinutes().toString().padStart(2, '0');
     const displayTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
@@ -689,8 +672,6 @@ const Home: React.FC = () => {
 
     return (
         <div key={item.id} className="flex flex-col md:flex-row items-start md:items-center gap-4 py-6 border-b border-gray-800 hover:bg-white/5 transition-colors px-4 md:px-6 group">
-            
-            {/* Time Column */}
             <div className="w-24 md:w-32 flex-shrink-0 flex flex-col items-start justify-center">
                 {status === 'LIVE' ? (
                     <span className="text-miraj-red font-bold animate-pulse flex items-center gap-2">
@@ -704,7 +685,6 @@ const Home: React.FC = () => {
                 )}
             </div>
 
-            {/* Info Column */}
             <div className="flex-grow min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                      <span className="text-[10px] font-bold uppercase tracking-wider text-miraj-gold border border-miraj-gold/30 px-2 py-0.5 rounded">
@@ -716,7 +696,6 @@ const Home: React.FC = () => {
                 <p className="text-gray-400 text-xs md:text-sm mt-1 line-clamp-1">{item.overview}</p>
             </div>
 
-            {/* Action Column */}
             <div className="w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
                 {status === 'ENDED' ? (
                     <Link to={`/watch/sports/${item.id}`} className="flex items-center justify-center gap-2 w-full md:w-auto bg-gray-800 text-gray-400 px-6 py-3 rounded-lg font-bold text-xs uppercase hover:bg-gray-700 transition-colors">
@@ -822,10 +801,9 @@ const Home: React.FC = () => {
         
         <PaginatedSection title="Trending TV Shows" icon={Tv} items={tvShows} visible={showTV} />
         
-        {/* ================= SPORTS SCHEDULE SECTION ================= */}
+        {/* SPORTS SCHEDULE SECTION */}
         {showSports && (
             <div className="animate-slide-up mb-12">
-                {/* Sports Header: Date & Timezone */}
                 <div className="bg-miraj-card border-t-4 border-miraj-gold rounded-t-lg p-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -858,7 +836,6 @@ const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sports List Container */}
                 <div className="bg-miraj-card/50 border-x border-b border-gray-800 rounded-b-lg overflow-hidden">
                     {sports.length > 0 ? (
                         <div className="divide-y divide-gray-800">
@@ -875,7 +852,6 @@ const Home: React.FC = () => {
                 <p className="text-sm items-center text-red-700 font-bold">We DO NOT host nor transmit any audiovisual content itself and DO NOT control nor influence such content. We cannot accept any liability for the content transmitted by others. Any responsibility for this content lies with those who host or transmit it. We are not affiliated nor claim to be affiliated with any of the owners of streams and/or videos. All content is copyright of their respective owners</p>
             </div>
         )}
-        {/* ================= END SPORTS SECTION ================= */}
 
         <PaginatedSection title="Live TV Channels" icon={Radio} items={tvLive} visible={showLive} />
       </div>
